@@ -76,7 +76,7 @@
 pip install uv
 
 # 克隆仓库
-git clone https://github.com/YOUR_USERNAME/kg-whisper.git
+git clone https://github.com/dhyuk54/kg-whisper.git
 cd kg-whisper
 
 # 创建虚拟环境并安装依赖

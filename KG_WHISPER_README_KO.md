@@ -76,7 +76,7 @@ aiOla의 두 논문 재현:
 pip install uv
 
 # 저장소 클론
-git clone https://github.com/YOUR_USERNAME/kg-whisper.git
+git clone https://github.com/dhyuk54/kg-whisper.git
 cd kg-whisper
 
 # 가상환경 생성 및 의존성 설치

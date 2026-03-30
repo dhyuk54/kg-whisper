@@ -76,7 +76,7 @@ Audio + Keyword List → AdaKWS (detect keywords) → KG-Whisper-PT (guided tran
 pip install uv
 
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/kg-whisper.git
+git clone https://github.com/dhyuk54/kg-whisper.git
 cd kg-whisper
 
 # Create virtual environment and install dependencies
@@ -90,18 +90,6 @@ uv pip install -e .
 
 # Install additional dependencies
 uv pip install gradio soundfile datasets nltk
-```
-
-### Install with pip
-
-```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# or
-venv\Scripts\activate     # Windows
-
-pip install -e .
-pip install gradio soundfile datasets nltk
 ```
 
 ### Download Checkpoints
@@ -157,9 +145,7 @@ Open http://localhost:7860 in your browser.
 | Dataset | Description |
 |---------|-------------|
 | Best Samples | VoxPopuli top 20 (highest improvement) |
-| Worst Samples | VoxPopuli 80 samples (Combined > Baseline) |
 | Medical Best | Medical top 20 (cross-domain, highest improvement) |
-| Medical ASR | 10 medical samples |
 
 ## Training
 

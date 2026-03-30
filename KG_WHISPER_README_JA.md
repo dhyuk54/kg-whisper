@@ -76,7 +76,7 @@ aiOlaの2つの論文の再現:
 pip install uv
 
 # リポジトリのクローン
-git clone https://github.com/YOUR_USERNAME/kg-whisper.git
+git clone https://github.com/dhyuk54/kg-whisper.git
 cd kg-whisper
 
 # 仮想環境の作成と依存関係のインストール
