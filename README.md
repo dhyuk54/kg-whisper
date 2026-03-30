@@ -153,19 +153,32 @@ Open http://localhost:7860 in your browser.
 
 ```bash
 python -m kg_whisper.train \
+    --whisper_model large-v2 \
+    --prefix_length 12 \
+    --max_steps 30000 \
+    --batch_size 4 \
+    --lr 5e-4 \
+    --language en \
     --device cuda \
     --cache_dir "YOUR_CACHE_DIR" \
-    --total_steps 30000 \
-    --batch_size 4
+    --eval_steps 1000 \
+    --save_steps 5000
 ```
 
 ### Train AdaKWS
 
 ```bash
 python -m kg_whisper.adakws_train \
+    --whisper_model large-v2 \
+    --batch_size 36 \
+    --gradient_accumulation_steps 4 \
+    --lr 1e-4 \
+    --num_epochs 25 \
+    --language en \
     --device cuda \
     --cache_dir "YOUR_CACHE_DIR" \
-    --epochs 25
+    --eval_steps 500 \
+    --save_steps 2500
 ```
 
 ## Evaluation
