@@ -196,23 +196,17 @@ kg_whisper/
 ├── data.py               # Dataset and dataloader
 ├── train.py              # KG-Whisper-PT training
 ├── adakws_model.py       # AdaKWS model (Whisper encoder + CharLSTM + AdaIN)
+├── adakws_config.py      # AdaKWS configuration
 ├── adakws_data.py        # AdaKWS dataset and negative sampling
 ├── adakws_train.py       # AdaKWS training (with cross-audio negatives)
 ├── adakws_eval.py        # AdaKWS evaluation (F1/AUC/EER)
 ├── eval_combined.py      # Full pipeline evaluation
-├── eval_medical.py       # Medical domain evaluation
 ├── kws_simulator.py      # Keyword sampling simulator
 └── outputs/              # Checkpoints (download separately)
 
 demo/
 ├── app.py                # Gradio demo application
-├── find_best_samples.py  # Find best VoxPopuli samples
-├── find_worst_samples.py # Find worst VoxPopuli samples
-├── find_best_medical_samples.py   # Find best Medical samples
-├── find_worst_medical_samples.py  # Find worst Medical samples
-├── precompute_keywords.py         # Pre-compute keywords for stable results
-├── stats_voxpopuli.py             # VoxPopuli statistics
-└── medical_keywords.txt           # Medical keyword list (80 terms)
+└── medical_keywords.txt  # Medical keyword list (80 terms)
 ```
 
 ## Key Findings
