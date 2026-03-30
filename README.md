@@ -15,6 +15,25 @@ A two-stage pipeline for keyword-guided speech recognition:
 Audio + Keyword List → AdaKWS (detect keywords) → KG-Whisper-PT (guided transcription)
 ```
 
+### Example (Medical ASR, cross-domain)
+
+```
+Audio:          Patient says "I feel hurts in my heart"
+Keyword List:   [pain, hurts, heart, ear, infection, cough, fever, ...]
+
+                                    Without Keywords          With Keywords
+                                    ─────────────────         ─────────────────
+Whisper Baseline (no keywords):     "i feel a horse
+                                     in my hair"
+                                     WER: 50%
+
+AdaKWS detects from keyword list:                             ["hurts", "heart"]
+
+KG-Whisper-PT (guided transcription):                         "i feel hurts
+                                                               in my heart"
+                                                               WER: 0% ✓
+```
+
 ## Reproduction Results
 
 ### AdaKWS (VoxPopuli EN test, 1842 samples)
