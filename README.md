@@ -76,6 +76,15 @@ KG-Whisper-PT (guided transcription):                         "i feel hurts
 - 11/20 samples improved, 8 corrected to 0% WER
 - Zero-shot cross-domain: trained on VoxPopuli, tested on Medical without fine-tuning
 
+### Dataset
+
+- **VoxPopuli EN** ([facebook/voxpopuli](https://huggingface.co/datasets/facebook/voxpopuli)): European Parliament speech recordings in English
+  - Train: ~18K samples, Test: 1842 samples
+  - Used for both AdaKWS and KG-Whisper-PT training and evaluation
+- **Medical ASR** ([Hani89/medical_asr_recording_dataset](https://huggingface.co/datasets/Hani89/medical_asr_recording_dataset)): Patient symptom descriptions
+  - Test: 1333 samples
+  - Used for cross-domain evaluation only (zero-shot, no fine-tuning)
+
 ### Training Configuration
 
 - **AdaKWS v3**: English, 25 epochs, cross-audio negative sampling, Whisper Small encoder

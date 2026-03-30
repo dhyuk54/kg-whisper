@@ -57,6 +57,15 @@
 - 20 个中 11 个改善，8 个修正到 WER 0%
 - 零样本跨域: 在 VoxPopuli 上训练，无需微调直接在医学领域测试
 
+### 数据集
+
+- **VoxPopuli EN** ([facebook/voxpopuli](https://huggingface.co/datasets/facebook/voxpopuli)): 欧洲议会英语演讲录音
+  - 训练集: ~18K 样本，测试集: 1842 样本
+  - 用于 AdaKWS 和 KG-Whisper-PT 的训练和评估
+- **Medical ASR** ([Hani89/medical_asr_recording_dataset](https://huggingface.co/datasets/Hani89/medical_asr_recording_dataset)): 患者症状描述
+  - 测试集: 1333 样本
+  - 仅用于跨域评估（零样本，不微调）
+
 ### 训练配置
 
 - **AdaKWS v3**: 英语，25 个 epoch，跨音频负采样，Whisper Small 编码器
@@ -202,19 +211,13 @@ kg_whisper/
 ├── adakws_train.py       # AdaKWS 训练（含跨音频负采样）
 ├── adakws_eval.py        # AdaKWS 评估（F1/AUC/EER）
 ├── eval_combined.py      # 完整流水线评估
-├── eval_medical.py       # 医学领域评估
+├── evaluate.py           # 评估函数（teacher-forced loss, WER）
 ├── kws_simulator.py      # 关键词采样模拟器
 └── outputs/              # 权重文件（需单独下载）
 
 demo/
 ├── app.py                # Gradio Demo 应用
-├── find_best_samples.py  # 查找 VoxPopuli 最佳样本
-├── find_worst_samples.py # 查找 VoxPopuli 最差样本
-├── find_best_medical_samples.py   # 查找 Medical 最佳样本
-├── find_worst_medical_samples.py  # 查找 Medical 最差样本
-├── precompute_keywords.py         # 预计算关键词以稳定结果
-├── stats_voxpopuli.py             # VoxPopuli 统计
-└── medical_keywords.txt           # 医学关键词列表（80 个术语）
+└── medical_keywords.txt  # 医学关键词列表（80 个术语）
 ```
 
 ## 核心结论
