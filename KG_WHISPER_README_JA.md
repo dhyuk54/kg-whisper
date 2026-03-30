@@ -57,6 +57,15 @@ aiOlaの2つの論文の再現:
 - 20中11サンプルが改善、8サンプルがWER 0%に修正
 - ゼロショットクロスドメイン: VoxPopuliで学習、ファインチューニングなしでMedicalでテスト
 
+### データセット
+
+- **VoxPopuli EN** ([facebook/voxpopuli](https://huggingface.co/datasets/facebook/voxpopuli)): 欧州議会の英語スピーチ録音
+  - 訓練: ~18Kサンプル、テスト: 1842サンプル
+  - AdaKWSおよびKG-Whisper-PTの訓練と評価に使用
+- **Medical ASR** ([Hani89/medical_asr_recording_dataset](https://huggingface.co/datasets/Hani89/medical_asr_recording_dataset)): 患者の症状説明
+  - テスト: 1333サンプル
+  - クロスドメイン評価のみに使用（ゼロショット、ファインチューニングなし）
+
 ### 学習構成
 
 - **AdaKWS v3**: 英語、25エポック、クロスオーディオネガティブサンプリング、Whisper Smallエンコーダ

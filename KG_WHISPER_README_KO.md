@@ -57,6 +57,15 @@ aiOla의 두 논문 재현:
 - 20개 중 11개 개선, 8개는 WER 0%로 수정
 - 제로샷 크로스 도메인: VoxPopuli로 학습, 파인튜닝 없이 Medical에서 테스트
 
+### 데이터셋
+
+- **VoxPopuli EN** ([facebook/voxpopuli](https://huggingface.co/datasets/facebook/voxpopuli)): 유럽 의회 영어 연설 녹음
+  - 훈련: ~18K 샘플, 테스트: 1842 샘플
+  - AdaKWS 및 KG-Whisper-PT 훈련과 평가에 사용
+- **Medical ASR** ([Hani89/medical_asr_recording_dataset](https://huggingface.co/datasets/Hani89/medical_asr_recording_dataset)): 환자 증상 설명
+  - 테스트: 1333 샘플
+  - 크로스 도메인 평가에만 사용 (제로샷, 파인튜닝 없음)
+
 ### 학습 구성
 
 - **AdaKWS v3**: 영어, 25 에폭, 크로스 오디오 네거티브 샘플링, Whisper Small 인코더
