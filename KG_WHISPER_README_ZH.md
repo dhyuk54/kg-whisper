@@ -67,7 +67,7 @@
 ### 环境要求
 
 - Python 3.9+
-- CUDA GPU（推荐: 8GB+ 显存）
+- CUDA GPU（推荐: 16GB+ 显存）
 
 ### 使用 uv 安装
 

@@ -67,7 +67,7 @@ Audio + Keyword List → AdaKWS (detect keywords) → KG-Whisper-PT (guided tran
 ### Requirements
 
 - Python 3.9+
-- CUDA GPU (recommended: 8GB+ VRAM)
+- CUDA GPU (recommended: 16GB+ VRAM)
 
 ### Install with uv
 

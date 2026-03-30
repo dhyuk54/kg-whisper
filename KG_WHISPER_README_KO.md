@@ -67,7 +67,7 @@ aiOla의 두 논문 재현:
 ### 요구 사항
 
 - Python 3.9+
-- CUDA GPU (권장: 8GB+ VRAM)
+- CUDA GPU (권장: 16GB+ VRAM)
 
 ### uv로 설치
 
