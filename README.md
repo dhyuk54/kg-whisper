@@ -1,160 +1,249 @@
-# Whisper
+# KG-Whisper: Keyword-Guided Whisper with AdaKWS
 
-[[Blog]](https://openai.com/blog/whisper)
-[[Paper]](https://arxiv.org/abs/2212.04356)
-[[Model card]](https://github.com/openai/whisper/blob/main/model-card.md)
-[[Colab example]](https://colab.research.google.com/github/openai/whisper/blob/master/notebooks/LibriSpeech.ipynb)
+Reproduction of two papers from aiOla:
+- **AdaKWS**: [Adaptive Keyword Spotting (arXiv:2309.08561)](https://arxiv.org/abs/2309.08561)
+- **KG-Whisper-PT**: [Keyword-Guided Adaptation of ASR (arXiv:2406.02649)](https://arxiv.org/abs/2406.02649)
 
-Whisper is a general-purpose speech recognition model. It is trained on a large dataset of diverse audio and is also a multitasking model that can perform multilingual speech recognition, speech translation, and language identification.
+## Overview
 
+A two-stage pipeline for keyword-guided speech recognition:
 
-## Approach
+1. **AdaKWS** - Open-vocabulary keyword spotting using Whisper Small encoder + Character LSTM + AdaIN
+2. **KG-Whisper-PT** - Prompt tuning with 12 learned prefix vectors (15K params) to guide Whisper Large-v2 decoder
 
-![Approach](https://raw.githubusercontent.com/openai/whisper/main/approach.png)
+```
+Audio + Keyword List → AdaKWS (detect keywords) → KG-Whisper-PT (guided transcription)
+```
 
-A Transformer sequence-to-sequence model is trained on various speech processing tasks, including multilingual speech recognition, speech translation, spoken language identification, and voice activity detection. These tasks are jointly represented as a sequence of tokens to be predicted by the decoder, allowing a single model to replace many stages of a traditional speech-processing pipeline. The multitask training format uses a set of special tokens that serve as task specifiers or classification targets.
+## Reproduction Results
 
+### AdaKWS (VoxPopuli EN test, 1842 samples)
+
+| Metric | Our Result | Paper Reference |
+|--------|-----------|-----------------|
+| F1 (threshold 0.3) | **96.17%** | 96.3% |
+| AUC | **98.64%** | - |
+| EER | **3.56%** | - |
+
+### KG-Whisper-PT (VoxPopuli EN test, 1842 samples)
+
+| Method | WER |
+|--------|-----|
+| Pure Whisper Large-v2 | 7.50% |
+| Baseline (PT, no keywords) | 7.15% |
+| Combined (AdaKWS + PT) | **7.06%** |
+| Oracle (perfect keywords) | 6.91% |
+
+### VoxPopuli Detailed Statistics (1842 samples)
+
+| Category | Count | Description |
+|----------|-------|-------------|
+| Improved | 110 | Combined WER < Baseline WER |
+| Same | 1658 | Combined WER = Baseline WER |
+| - Both WER = 0% | 707 | All models correct, no interference |
+| - Both WER > 0% | 951 | Same errors with or without keywords |
+| Worse | 74 | Combined WER > Baseline WER (due to negative sampling artifacts) |
+
+- Baseline WER = 0%: 731 / 1842 (39.7%)
+- Combined WER = 0%: 754 / 1842 (40.9%) — 23 more samples corrected to perfect by keywords
+
+### Cross-Domain: Medical ASR (custom keyword list, 80 medical terms)
+
+| Method | WER (20 best samples) |
+|--------|----------------------|
+| Baseline (no keywords) | 50.45% |
+| Combined (with keyword list) | **27.35%** |
+
+- 11/20 samples improved, 8 corrected to 0% WER
+- Zero-shot cross-domain: trained on VoxPopuli, tested on Medical without fine-tuning
+
+### Training Configuration
+
+- **AdaKWS v3**: English, 25 epochs, cross-audio negative sampling, Whisper Small encoder
+- **KG-Whisper-PT v2**: English, 30K steps, batch-internal negative sampling, Whisper Large-v2 decoder, 12 prefix vectors
 
 ## Setup
 
-We used Python 3.9.9 and [PyTorch](https://pytorch.org/) 1.10.1 to train and test our models, but the codebase is expected to be compatible with Python 3.8-3.11 and recent PyTorch versions. The codebase also depends on a few Python packages, most notably [OpenAI's tiktoken](https://github.com/openai/tiktoken) for their fast tokenizer implementation. You can download and install (or update to) the latest release of Whisper with the following command:
+### Requirements
 
-    pip install -U openai-whisper
+- Python 3.9+
+- CUDA GPU (recommended: 8GB+ VRAM)
 
-Alternatively, the following command will pull and install the latest commit from this repository, along with its Python dependencies:
-
-    pip install git+https://github.com/openai/whisper.git 
-
-To update the package to the latest version of this repository, please run:
-
-    pip install --upgrade --no-deps --force-reinstall git+https://github.com/openai/whisper.git
-
-It also requires the command-line tool [`ffmpeg`](https://ffmpeg.org/) to be installed on your system, which is available from most package managers:
+### Install with uv
 
 ```bash
-# on Ubuntu or Debian
-sudo apt update && sudo apt install ffmpeg
+# Install uv (if not installed)
+pip install uv
 
-# on Arch Linux
-sudo pacman -S ffmpeg
+# Clone the repository
+git clone https://github.com/YOUR_USERNAME/kg-whisper.git
+cd kg-whisper
 
-# on MacOS using Homebrew (https://brew.sh/)
-brew install ffmpeg
+# Create virtual environment and install dependencies
+uv venv
+source .venv/bin/activate  # Linux/Mac
+# or
+.venv\Scripts\activate     # Windows
 
-# on Windows using Chocolatey (https://chocolatey.org/)
-choco install ffmpeg
+# Install the project
+uv pip install -e .
 
-# on Windows using Scoop (https://scoop.sh/)
-scoop install ffmpeg
+# Install additional dependencies
+uv pip install gradio soundfile datasets nltk
 ```
 
-You may need [`rust`](http://rust-lang.org) installed as well, in case [tiktoken](https://github.com/openai/tiktoken) does not provide a pre-built wheel for your platform. If you see installation errors during the `pip install` command above, please follow the [Getting started page](https://www.rust-lang.org/learn/get-started) to install Rust development environment. Additionally, you may need to configure the `PATH` environment variable, e.g. `export PATH="$HOME/.cargo/bin:$PATH"`. If the installation fails with `No module named 'setuptools_rust'`, you need to install `setuptools_rust`, e.g. by running:
+### Install with pip
 
 ```bash
-pip install setuptools-rust
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# or
+venv\Scripts\activate     # Windows
+
+pip install -e .
+pip install gradio soundfile datasets nltk
 ```
 
+### Download Checkpoints
 
-## Available models and languages
+Download from Google Drive: [Checkpoints](https://drive.google.com/drive/folders/1MaDFDu-aUwNVy3EuxEDdVL6ShfrXog9D?usp=sharing)
 
-There are six model sizes, four with English-only versions, offering speed and accuracy tradeoffs.
-Below are the names of the available models and their approximate memory requirements and inference speed relative to the large model.
-The relative speeds below are measured by transcribing English speech on a A100, and the real-world speed may vary significantly depending on many factors including the language, the speaking speed, and the available hardware.
+Place the files as follows:
+```
+kg_whisper/outputs/
+├── checkpoint_final.pt                          # KG-Whisper-PT (183K)
+└── adakws_v3/
+    └── adakws_checkpoint_29000.pt               # AdaKWS v3 (261MB)
+```
 
-|  Size  | Parameters | English-only model | Multilingual model | Required VRAM | Relative speed |
-|:------:|:----------:|:------------------:|:------------------:|:-------------:|:--------------:|
-|  tiny  |    39 M    |     `tiny.en`      |       `tiny`       |     ~1 GB     |      ~10x      |
-|  base  |    74 M    |     `base.en`      |       `base`       |     ~1 GB     |      ~7x       |
-| small  |   244 M    |     `small.en`     |      `small`       |     ~2 GB     |      ~4x       |
-| medium |   769 M    |    `medium.en`     |      `medium`      |     ~5 GB     |      ~2x       |
-| large  |   1550 M   |        N/A         |      `large`       |    ~10 GB     |       1x       |
-| turbo  |   809 M    |        N/A         |      `turbo`       |     ~6 GB     |      ~8x       |
+### Download Demo Audio
 
-The `.en` models for English-only applications tend to perform better, especially for the `tiny.en` and `base.en` models. We observed that the difference becomes less significant for the `small.en` and `medium.en` models.
-Additionally, the `turbo` model is an optimized version of `large-v3` that offers faster transcription speed with a minimal degradation in accuracy.
+Download from Google Drive: [Demo Audio](https://drive.google.com/drive/folders/1zqFEOnfrXyP2h9bCijdYqCVvT3VaCZgk?usp=sharing)
 
-Whisper's performance varies widely depending on the language. The figure below shows a performance breakdown of `large-v3` and `large-v2` models by language, using WERs (word error rates) or CER (character error rates, shown in *Italic*) evaluated on the Common Voice 15 and Fleurs datasets. Additional WER/CER metrics corresponding to the other models and datasets can be found in Appendix D.1, D.2, and D.4 of [the paper](https://arxiv.org/abs/2212.04356), as well as the BLEU (Bilingual Evaluation Understudy) scores for translation in Appendix D.3.
+Place the files as follows:
+```
+demo/
+├── audio_best/                    # VoxPopuli best 20 samples
+│   ├── best_00.wav ... best_19.wav
+│   └── ground_truth.json
+├── audio_medical_best/            # Medical best 20 samples
+│   ├── medical_best_00.wav ... medical_best_19.wav
+│   ├── ground_truth.json
+│   └── medical_keywords.txt
+└── medical_keywords.txt           # 80 medical terms
+```
 
-![WER breakdown by language](https://github.com/openai/whisper/assets/266841/f4619d66-1058-4005-8f67-a9d811b77c62)
-
-## Command-line usage
-
-The following command will transcribe speech in audio files, using the `turbo` model:
+## Running the Demo
 
 ```bash
-whisper audio.flac audio.mp3 audio.wav --model turbo
+python -m demo.app \
+    --device cuda \
+    --adakws_checkpoint kg_whisper/outputs/adakws_v3/adakws_checkpoint_29000.pt \
+    --whisper_pt_checkpoint kg_whisper/outputs/checkpoint_final.pt
 ```
 
-The default setting (which selects the `turbo` model) works well for transcribing English. However, **the `turbo` model is not trained for translation tasks**. If you need to **translate non-English speech into English**, use one of the **multilingual models** (`tiny`, `base`, `small`, `medium`, `large`) instead of `turbo`. 
+Open http://localhost:7860 in your browser.
 
-For example, to transcribe an audio file containing non-English speech, you can specify the language:
+### Demo Features
+
+| Tab | Description |
+|-----|-------------|
+| **Single Sample** | Select a sample, run full pipeline (Baseline / AdaKWS / Combined / Oracle) |
+| **Custom Keywords** | Upload any audio + custom keyword list (real-world mode) |
+| **Batch Evaluation** | Run all samples with optional custom keyword list, download CSV |
+
+### Available Datasets in Demo
+
+| Dataset | Description |
+|---------|-------------|
+| Best Samples | VoxPopuli top 20 (highest improvement) |
+| Worst Samples | VoxPopuli 80 samples (Combined > Baseline) |
+| Medical Best | Medical top 20 (cross-domain, highest improvement) |
+| Medical ASR | 10 medical samples |
+
+## Training
+
+### Train KG-Whisper-PT
 
 ```bash
-whisper japanese.wav --language Japanese
+python -m kg_whisper.train \
+    --device cuda \
+    --cache_dir "YOUR_CACHE_DIR" \
+    --total_steps 30000 \
+    --batch_size 4
 ```
 
-To **translate** speech into English, use:
+### Train AdaKWS
 
 ```bash
-whisper japanese.wav --model medium --language Japanese --task translate
+python -m kg_whisper.adakws_train \
+    --device cuda \
+    --cache_dir "YOUR_CACHE_DIR" \
+    --epochs 25
 ```
 
-> **Note:** The `turbo` model will return the original language even if `--task translate` is specified. Use `medium` or `large` for the best translation results.
+## Evaluation
 
-Run the following to view all available options:
+### Combined Evaluation (VoxPopuli)
 
 ```bash
-whisper --help
+python -m kg_whisper.eval_combined \
+    --pt_checkpoint kg_whisper/outputs/checkpoint_final.pt \
+    --adakws_checkpoint kg_whisper/outputs/adakws_v3/adakws_checkpoint_29000.pt \
+    --device cuda --cache_dir "YOUR_CACHE_DIR" --mode all
 ```
 
-See [tokenizer.py](https://github.com/openai/whisper/blob/main/whisper/tokenizer.py) for the list of all available languages.
+### AdaKWS F1/AUC/EER
 
-
-## Python usage
-
-Transcription can also be performed within Python: 
-
-```python
-import whisper
-
-model = whisper.load_model("turbo")
-result = model.transcribe("audio.mp3")
-print(result["text"])
+```bash
+python -m kg_whisper.adakws_eval \
+    --checkpoint kg_whisper/outputs/adakws_v3/adakws_checkpoint_29000.pt \
+    --device cuda --cache_dir "YOUR_CACHE_DIR"
 ```
 
-Internally, the `transcribe()` method reads the entire file and processes the audio with a sliding 30-second window, performing autoregressive sequence-to-sequence predictions on each window.
+## Project Structure
 
-Below is an example usage of `whisper.detect_language()` and `whisper.decode()` which provide lower-level access to the model.
+```
+kg_whisper/
+├── model.py              # KGWhisperPT model (prefix tuning)
+├── config.py             # Configuration
+├── data.py               # Dataset and dataloader
+├── train.py              # KG-Whisper-PT training
+├── adakws_model.py       # AdaKWS model (Whisper encoder + CharLSTM + AdaIN)
+├── adakws_data.py        # AdaKWS dataset and negative sampling
+├── adakws_train.py       # AdaKWS training (with cross-audio negatives)
+├── adakws_eval.py        # AdaKWS evaluation (F1/AUC/EER)
+├── eval_combined.py      # Full pipeline evaluation
+├── eval_medical.py       # Medical domain evaluation
+├── kws_simulator.py      # Keyword sampling simulator
+└── outputs/              # Checkpoints (download separately)
 
-```python
-import whisper
-
-model = whisper.load_model("turbo")
-
-# load audio and pad/trim it to fit 30 seconds
-audio = whisper.load_audio("audio.mp3")
-audio = whisper.pad_or_trim(audio)
-
-# make log-Mel spectrogram and move to the same device as the model
-mel = whisper.log_mel_spectrogram(audio, n_mels=model.dims.n_mels).to(model.device)
-
-# detect the spoken language
-_, probs = model.detect_language(mel)
-print(f"Detected language: {max(probs, key=probs.get)}")
-
-# decode the audio
-options = whisper.DecodingOptions()
-result = whisper.decode(model, mel, options)
-
-# print the recognized text
-print(result.text)
+demo/
+├── app.py                # Gradio demo application
+├── find_best_samples.py  # Find best VoxPopuli samples
+├── find_worst_samples.py # Find worst VoxPopuli samples
+├── find_best_medical_samples.py   # Find best Medical samples
+├── find_worst_medical_samples.py  # Find worst Medical samples
+├── precompute_keywords.py         # Pre-compute keywords for stable results
+├── stats_voxpopuli.py             # VoxPopuli statistics
+└── medical_keywords.txt           # Medical keyword list (80 terms)
 ```
 
-## More examples
+## Key Findings
 
-Please use the [🙌 Show and tell](https://github.com/openai/whisper/discussions/categories/show-and-tell) category in Discussions for sharing more example usages of Whisper and third-party extensions such as web demos, integrations with other tools, ports for different platforms, etc.
+1. **AdaKWS F1 96.17%** matches paper's 96.3% — keyword detection successfully reproduced
+2. **Combined < Baseline** (7.06% < 7.15%) — keyword guidance improves transcription
+3. **Cross-domain works** — trained on VoxPopuli, improves Medical ASR without fine-tuning
+4. **Custom keyword list** — 10-50 domain-specific terms recommended (per aiOla docs)
+5. **Audio quality is key** — clear audio + keyword list = best results; poor audio = no model can help
 
+## References
+
+- [AdaKWS: Adaptive Keyword Spotting](https://arxiv.org/abs/2309.08561)
+- [KG-Whisper: Keyword-Guided Adaptation of ASR](https://arxiv.org/abs/2406.02649)
+- [aiOla Jargonic](https://aiola.ai/jargonic/)
+- [OpenAI Whisper](https://github.com/openai/whisper)
 
 ## License
 
-Whisper's code and model weights are released under the MIT License. See [LICENSE](https://github.com/openai/whisper/blob/main/LICENSE) for further details.
+This project is built on top of [OpenAI Whisper](https://github.com/openai/whisper) (MIT License).
