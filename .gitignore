@@ -9,3 +9,82 @@ thumbs.db
 .DS_Store
 .idea
 
+# Virtual environments
+venv_win/
+.venv/
+
+# Model checkpoints (download from Google Drive)
+kg_whisper/outputs/
+
+# Demo audio files (download from Google Drive)
+demo/audio/
+demo/audio_best/
+demo/audio_worst/
+demo/audio_medical_best/
+demo/audio_medical_worst/
+demo/audio_voxpopuli/
+demo/batch_results.csv
+demo/stats_voxpopuli.log
+demo/stats_voxpopuli.txt
+
+# Release folder
+release/
+
+# Large files
+*.pt
+*.wav
+*.mp3
+
+# Misc
+AdaKWS_复现/
+data/
+*.log
+
+# Personal notes
+kg_whisper/MEMO*.md
+kg_whisper/日本語*.md
+
+# Misc files
+.claude/
+colab_adakws_train.ipynb
+kg_whisper_code.zip
+demo/static/
+demo/templates/
+
+# Non-essential kg_whisper scripts
+kg_whisper/demo.py
+kg_whisper/evaluate.py
+kg_whisper/eval_full.py
+kg_whisper/eval_medical.py
+kg_whisper/eval_medical_combined.py
+kg_whisper/inference.py
+kg_whisper/download_voxpopuli.py
+kg_whisper/inspect_data.py
+kg_whisper/scan_charvocab.py
+kg_whisper/vram_test.py
+kg_whisper/adakws_error_analysis.py
+
+# Demo data files (generated)
+demo/ground_truth.json
+demo/ground_truth_voxpopuli.json
+demo/word_analysis.json
+
+# Demo scripts (not needed for deployment)
+demo/extract_samples.py
+demo/extract_voxpopuli.py
+demo/find_best_samples.py
+demo/find_worst_samples.py
+demo/find_best_medical_samples.py
+demo/find_worst_medical_samples.py
+demo/precompute_keywords.py
+demo/stats_voxpopuli.py
+
+# Original Whisper files (not needed)
+notebooks/
+paper/
+tests/
+approach.png
+model-card.md
+CHANGELOG.md
+README.md
+
