@@ -205,6 +205,23 @@ def run_adakws_detect(mel: torch.Tensor, keywords: list, threshold: float = 0.3)
     return detected
 
 
+STOPWORDS = {
+    "i", "me", "my", "we", "our", "you", "your", "he", "him", "his",
+    "she", "her", "it", "its", "they", "them", "their",
+    "a", "an", "the", "this", "that", "these", "those",
+    "is", "am", "are", "was", "were", "be", "been", "being",
+    "have", "has", "had", "do", "does", "did",
+    "will", "would", "shall", "should", "may", "might", "can", "could",
+    "not", "no", "nor", "so", "if", "or", "and", "but", "yet",
+    "to", "of", "in", "on", "at", "by", "for", "with", "from",
+    "up", "out", "off", "over", "into", "about", "after", "before",
+    "then", "than", "very", "just", "also", "now", "here", "there",
+    "what", "when", "where", "who", "how", "which", "why",
+    "all", "any", "some", "much", "many", "more", "most", "other",
+    "let", "us", "get", "got",
+}
+
+
 def sample_keywords(text: str, n_positive: int = 3, n_negative: int = 17) -> tuple:
     """Sample keywords following paper protocol: 3 positive + 17 negative."""
     from kg_whisper.adakws_data import NegativeSampler
@@ -216,10 +233,12 @@ def sample_keywords(text: str, n_positive: int = 3, n_negative: int = 17) -> tup
 
     positive_words_set = set(words)
 
-    # Positive: random words from transcript
+    # Positive: prefer content words (filter stopwords), fall back to all words
     unique_words = list(set(words))
-    n_pos = min(n_positive, len(unique_words))
-    positives = random.sample(unique_words, n_pos)
+    content_words = [w for w in unique_words if w not in STOPWORDS and len(w) > 2]
+    pos_pool = content_words if content_words else unique_words
+    n_pos = min(n_positive, len(pos_pool))
+    positives = random.sample(pos_pool, n_pos)
 
     # Negative: using NegativeSampler (char_sub, concat, random), no duplicates
     neg_sampler = NegativeSampler(unique_words)
@@ -227,9 +246,9 @@ def sample_keywords(text: str, n_positive: int = 3, n_negative: int = 17) -> tup
     used = set(w.lower() for w in positives)
     attempts = 0
     while len(negatives) < n_negative and attempts < n_negative * 5:
-        pos_kw = random.choice(words)
+        pos_kw = random.choice(content_words) if content_words else random.choice(words)
         neg = neg_sampler.sample(positive_words_set, pos_kw)
-        if neg.lower() not in used:
+        if neg.lower() not in used and neg.lower() not in STOPWORDS and neg.lower() not in positive_words_set:
             used.add(neg.lower())
             negatives.append(neg)
         attempts += 1
@@ -269,6 +288,21 @@ def switch_dataset(dataset_name: str):
     gt = get_current_gt()
     sample_names = sorted(gt.keys())
     return gr.update(choices=sample_names, value=sample_names[0] if sample_names else None)
+
+
+def highlight_keywords(text: str, keywords: list) -> str:
+    """Highlight detected keywords in transcription text using bold markdown."""
+    if not keywords:
+        return text
+    kw_lower = {kw.lower() for kw in keywords}
+    result = []
+    for word in text.split():
+        clean = re.sub(r"[^\w'-]", "", word).lower()
+        if clean in kw_lower:
+            result.append(f"**{word}**")
+        else:
+            result.append(word)
+    return " ".join(result)
 
 
 # ── Gradio callback: single sample ──
@@ -343,6 +377,9 @@ def transcribe_sample(sample_name: str):
     logger.info("Transcribed %s: Baseline=%.2f%%, Combined=%.2f%%, Oracle=%.2f%%, F1=%.0f%%",
                 sample_name, baseline_wer * 100, combined_wer * 100, oracle_wer * 100, f1 * 100)
 
+    # Highlight detected keywords in combined transcription
+    combined_highlighted = highlight_keywords(combined_text, detected_keywords)
+
     return (
         audio_path,
         reference_text,
@@ -350,7 +387,7 @@ def transcribe_sample(sample_name: str):
         detected_str,
         kws_metrics,
         f"{baseline_text}\n\nWER: {baseline_wer:.2%} | Time: {baseline_time:.2f}s",
-        f"{combined_text}\n\nWER: {combined_wer:.2%} | Time: {combined_time:.2f}s",
+        f"{combined_highlighted}\n\nWER: {combined_wer:.2%} | Time: {combined_time:.2f}s",
         f"{oracle_text}\n\nWER: {oracle_wer:.2%} | Time: {oracle_time:.2f}s",
     )
 
@@ -497,12 +534,14 @@ def transcribe_with_custom_kws(audio_file, custom_keywords_text):
 
     candidates_str = ", ".join(keywords)
 
+    combined_highlighted = highlight_keywords(combined_text, detected_keywords)
+
     return (
         candidates_str,
         detected_str,
         f"Detection time: {kws_time:.2f}s",
         f"{baseline_text}\n\nTime: {baseline_time:.2f}s",
-        f"{combined_text}\n\nTime: {combined_time:.2f}s",
+        f"{combined_highlighted}\n\nTime: {combined_time:.2f}s",
     )
 
 
@@ -537,18 +576,46 @@ def build_ui():
                 )
                 transcribe_btn = gr.Button("Transcribe", variant="primary", scale=1)
 
-            dataset_dropdown.change(
-                fn=switch_dataset,
-                inputs=[dataset_dropdown],
-                outputs=[sample_dropdown],
-            )
-
             audio_player = gr.Audio(label="Audio", type="filepath", interactive=False)
 
             gr.Markdown("---")
-
             gr.Markdown("### Ground Truth")
             reference_output = gr.Textbox(label="Reference", interactive=False)
+
+            def update_sample_preview(sample_name: str):
+                """Update audio player and reference when sample selection changes."""
+                if not sample_name:
+                    return None, ""
+                audio_dir = get_current_audio_dir()
+                audio_path = str(audio_dir / sample_name)
+                gt = get_current_gt()
+                reference = gt.get(sample_name, {}).get("text", "")
+                return audio_path, reference
+
+            def switch_dataset_and_audio(dataset_name: str):
+                """Switch dataset and return updated sample list + audio + reference."""
+                result = switch_dataset(dataset_name)
+                gt = get_current_gt()
+                sample_names = sorted(gt.keys())
+                if sample_names:
+                    first = sample_names[0]
+                    first_audio = str(get_current_audio_dir() / first)
+                    first_ref = gt.get(first, {}).get("text", "")
+                else:
+                    first_audio, first_ref = None, ""
+                return result, first_audio, first_ref
+
+            dataset_dropdown.change(
+                fn=switch_dataset_and_audio,
+                inputs=[dataset_dropdown],
+                outputs=[sample_dropdown, audio_player, reference_output],
+            )
+
+            sample_dropdown.change(
+                fn=update_sample_preview,
+                inputs=[sample_dropdown],
+                outputs=[audio_player, reference_output],
+            )
 
             gr.Markdown("---")
 
@@ -568,7 +635,7 @@ def build_ui():
                     baseline_output = gr.Textbox(label="Transcription", interactive=False, lines=3)
                 with gr.Column():
                     gr.Markdown("### Combined (AdaKWS keywords)")
-                    combined_output = gr.Textbox(label="Transcription", interactive=False, lines=3)
+                    combined_output = gr.Markdown()
                 with gr.Column():
                     gr.Markdown("### Oracle (perfect keywords)")
                     oracle_output = gr.Textbox(label="Transcription", interactive=False, lines=3)
@@ -622,7 +689,7 @@ def build_ui():
                     custom_baseline = gr.Textbox(label="Transcription", interactive=False, lines=3)
                 with gr.Column():
                     gr.Markdown("### Combined (with detected keywords)")
-                    custom_combined = gr.Textbox(label="Transcription", interactive=False, lines=3)
+                    custom_combined = gr.Markdown()
 
             custom_btn.click(
                 fn=transcribe_with_custom_kws,

@@ -95,7 +95,7 @@ KG-Whisper-PT (guided transcription):                         "i feel hurts
 ### Requirements
 
 - Python 3.9+
-- CUDA GPU (recommended: 16GB+ VRAM)
+- CUDA GPU (recommended: 16GB+ VRAM) or Apple Silicon Mac (MPS)
 
 ### Install with uv
 
@@ -117,12 +117,12 @@ source .venv/bin/activate  # Linux/Mac
 uv pip install -e .
 
 # Install additional dependencies
-uv pip install gradio soundfile datasets nltk
+uv pip install gradio soundfile datasets nltk scikit-learn
 ```
 
 ### Download Checkpoints
 
-Download from Google Drive: [Checkpoints](https://drive.google.com/drive/folders/1MaDFDu-aUwNVy3EuxEDdVL6ShfrXog9D?usp=sharing)
+Download from Google Drive: [Checkpoints](https://drive.google.com/drive/folders/1zqFEOnfrXyP2h9bCijdYqCVvT3VaCZgk?usp=sharing)
 
 Place the files as follows:
 ```
@@ -134,7 +134,7 @@ kg_whisper/outputs/
 
 ### Download Demo Audio
 
-Download from Google Drive: [Demo Audio](https://drive.google.com/drive/folders/1zqFEOnfrXyP2h9bCijdYqCVvT3VaCZgk?usp=sharing)
+Download from Google Drive: [Demo Audio](https://drive.google.com/drive/folders/1MaDFDu-aUwNVy3EuxEDdVL6ShfrXog9D?usp=sharing)
 
 Place the files as follows:
 ```
@@ -151,12 +151,26 @@ demo/
 
 ## Running the Demo
 
+### CUDA (Linux/Windows)
+
 ```bash
 python -m demo.app \
     --device cuda \
     --adakws_checkpoint kg_whisper/outputs/adakws_v3/adakws_checkpoint_29000.pt \
     --whisper_pt_checkpoint kg_whisper/outputs/checkpoint_final.pt
 ```
+
+### Apple Silicon Mac (M1/M2/M3/M4)
+
+MPS (Metal Performance Shaders) is auto-detected. Do not pass `--device cuda`.
+
+```bash
+uv run python -m demo.app \
+    --adakws_checkpoint kg_whisper/outputs/adakws_v3/adakws_checkpoint_29000.pt \
+    --whisper_pt_checkpoint kg_whisper/outputs/checkpoint_final.pt
+```
+
+> **Tested on**: Mac M4 Max (macOS, Python 3.13, PyTorch 2.11)
 
 Open http://localhost:7860 in your browser.
 
@@ -170,10 +184,14 @@ Open http://localhost:7860 in your browser.
 
 ### Available Datasets in Demo
 
-| Dataset | Description |
-|---------|-------------|
-| Best Samples | VoxPopuli top 20 (highest improvement) |
-| Medical Best | Medical top 20 (cross-domain, highest improvement) |
+The downloaded demo audio includes **2 datasets** (20 samples each), which are sufficient to demonstrate the full pipeline:
+
+| Dataset | Audio Directory | Description |
+|---------|----------------|-------------|
+| **Best Samples** | `demo/audio_best/` | VoxPopuli top 20 (highest improvement) |
+| **Medical Best** | `demo/audio_medical_best/` | Medical top 20 (cross-domain, highest improvement) |
+
+> **Note**: The codebase also supports Worst Samples, Medical ASR, and VoxPopuli EN datasets, but these require additional audio files not included in the demo download.
 
 ## Training
 

@@ -76,7 +76,7 @@ aiOla의 두 논문 재현:
 ### 요구 사항
 
 - Python 3.9+
-- CUDA GPU (권장: 16GB+ VRAM)
+- CUDA GPU (권장: 16GB+ VRAM) 또는 Apple Silicon Mac (MPS)
 
 ### uv로 설치
 
@@ -98,12 +98,12 @@ source .venv/bin/activate  # Linux/Mac
 uv pip install -e .
 
 # 추가 의존성 설치
-uv pip install gradio soundfile datasets nltk
+uv pip install gradio soundfile datasets nltk scikit-learn
 ```
 
 ### 체크포인트 다운로드
 
-Google Drive에서 다운로드: [체크포인트](https://drive.google.com/drive/folders/1MaDFDu-aUwNVy3EuxEDdVL6ShfrXog9D?usp=sharing), [데모 오디오](https://drive.google.com/drive/folders/1zqFEOnfrXyP2h9bCijdYqCVvT3VaCZgk?usp=sharing)
+Google Drive에서 다운로드: [체크포인트](https://drive.google.com/drive/folders/1zqFEOnfrXyP2h9bCijdYqCVvT3VaCZgk?usp=sharing)
 
 다음과 같이 배치:
 ```
@@ -113,7 +113,26 @@ kg_whisper/outputs/
     └── adakws_checkpoint_29000.pt               # AdaKWS v3 (261MB)
 ```
 
+### 데모 오디오 다운로드
+
+Google Drive에서 다운로드: [데모 오디오](https://drive.google.com/drive/folders/1MaDFDu-aUwNVy3EuxEDdVL6ShfrXog9D?usp=sharing)
+
+다음과 같이 배치:
+```
+demo/
+├── audio_best/                    # VoxPopuli 최상위 20 샘플
+│   ├── best_00.wav ... best_19.wav
+│   └── ground_truth.json
+├── audio_medical_best/            # Medical 최상위 20 샘플
+│   ├── medical_best_00.wav ... medical_best_19.wav
+│   ├── ground_truth.json
+│   └── medical_keywords.txt
+└── medical_keywords.txt           # 80개 의료 용어
+```
+
 ## 데모 실행
+
+### CUDA (Linux/Windows)
 
 ```bash
 python -m demo.app \
@@ -121,6 +140,18 @@ python -m demo.app \
     --adakws_checkpoint kg_whisper/outputs/adakws_v3/adakws_checkpoint_29000.pt \
     --whisper_pt_checkpoint kg_whisper/outputs/checkpoint_final.pt
 ```
+
+### Apple Silicon Mac (M1/M2/M3/M4)
+
+MPS (Metal Performance Shaders)가 자동 감지됩니다. `--device cuda`를 전달하지 마세요.
+
+```bash
+uv run python -m demo.app \
+    --adakws_checkpoint kg_whisper/outputs/adakws_v3/adakws_checkpoint_29000.pt \
+    --whisper_pt_checkpoint kg_whisper/outputs/checkpoint_final.pt
+```
+
+> **테스트 환경**: Mac M4 Max (macOS, Python 3.13, PyTorch 2.11)
 
 브라우저에서 http://localhost:7860 을 엽니다.
 
@@ -131,6 +162,17 @@ python -m demo.app \
 | **Single Sample** | 샘플 선택, 전체 파이프라인 실행 (Baseline / AdaKWS / Combined / Oracle) |
 | **Custom Keywords** | 오디오 업로드 + 커스텀 키워드 목록 (실제 사용 모드) |
 | **Batch Evaluation** | 전체 샘플 실행, 커스텀 키워드 목록 옵션, CSV 다운로드 |
+
+### 데모에서 사용 가능한 데이터셋
+
+다운로드한 데모 오디오에는 **2개의 데이터셋**(각 20개 샘플)이 포함되어 있으며, 전체 파이프라인을 시연하기에 충분합니다:
+
+| 데이터셋 | 오디오 디렉토리 | 설명 |
+|----------|----------------|------|
+| **Best Samples** | `demo/audio_best/` | VoxPopuli 상위 20 (개선 최대) |
+| **Medical Best** | `demo/audio_medical_best/` | Medical 상위 20 (크로스 도메인, 개선 최대) |
+
+> **참고**: 코드베이스는 Worst Samples, Medical ASR, VoxPopuli EN 데이터셋도 지원하지만, 이들은 데모 다운로드에 포함되지 않은 추가 오디오 파일이 필요합니다.
 
 ## 주요 발견
 

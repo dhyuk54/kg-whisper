@@ -76,7 +76,7 @@
 ### 环境要求
 
 - Python 3.9+
-- CUDA GPU（推荐: 16GB+ 显存）
+- CUDA GPU（推荐: 16GB+ 显存）或 Apple Silicon Mac（MPS）
 
 ### 使用 uv 安装
 
@@ -98,12 +98,12 @@ source .venv/bin/activate  # Linux/Mac
 uv pip install -e .
 
 # 安装额外依赖
-uv pip install gradio soundfile datasets nltk
+uv pip install gradio soundfile datasets nltk scikit-learn
 ```
 
 ### 下载权重
 
-从 Google Drive 下载: [权重文件](https://drive.google.com/drive/folders/1MaDFDu-aUwNVy3EuxEDdVL6ShfrXog9D?usp=sharing), [Demo 音频](https://drive.google.com/drive/folders/1zqFEOnfrXyP2h9bCijdYqCVvT3VaCZgk?usp=sharing)
+从 Google Drive 下载: [权重文件](https://drive.google.com/drive/folders/1zqFEOnfrXyP2h9bCijdYqCVvT3VaCZgk?usp=sharing)
 
 放置如下:
 ```
@@ -115,7 +115,7 @@ kg_whisper/outputs/
 
 ### 下载 Demo 音频
 
-从 Google Drive 下载: [权重文件](https://drive.google.com/drive/folders/1MaDFDu-aUwNVy3EuxEDdVL6ShfrXog9D?usp=sharing), [Demo 音频](https://drive.google.com/drive/folders/1zqFEOnfrXyP2h9bCijdYqCVvT3VaCZgk?usp=sharing)
+从 Google Drive 下载: [Demo 音频](https://drive.google.com/drive/folders/1MaDFDu-aUwNVy3EuxEDdVL6ShfrXog9D?usp=sharing)
 
 放置如下:
 ```
@@ -132,12 +132,26 @@ demo/
 
 ## 运行 Demo
 
+### CUDA (Linux/Windows)
+
 ```bash
 python -m demo.app \
     --device cuda \
     --adakws_checkpoint kg_whisper/outputs/adakws_v3/adakws_checkpoint_29000.pt \
     --whisper_pt_checkpoint kg_whisper/outputs/checkpoint_final.pt
 ```
+
+### Apple Silicon Mac (M1/M2/M3/M4)
+
+MPS (Metal Performance Shaders) 会自动检测，无需传入 `--device cuda`。
+
+```bash
+uv run python -m demo.app \
+    --adakws_checkpoint kg_whisper/outputs/adakws_v3/adakws_checkpoint_29000.pt \
+    --whisper_pt_checkpoint kg_whisper/outputs/checkpoint_final.pt
+```
+
+> **已测试环境**: Mac M4 Max (macOS, Python 3.13, PyTorch 2.11)
 
 在浏览器中打开 http://localhost:7860
 
@@ -151,12 +165,14 @@ python -m demo.app \
 
 ### Demo 可用数据集
 
-| 数据集 | 说明 |
-|--------|------|
-| Best Samples | VoxPopuli Top 20（改善最大） |
-| Worst Samples | VoxPopuli 80 个样本（Combined > Baseline） |
-| Medical Best | Medical Top 20（跨域，改善最大） |
-| Medical ASR | 10 个医学样本 |
+下载的 Demo 音频包含 **2 个数据集**（各 20 个样本），足以演示完整流水线:
+
+| 数据集 | 音频目录 | 说明 |
+|--------|----------|------|
+| **Best Samples** | `demo/audio_best/` | VoxPopuli Top 20（改善最大） |
+| **Medical Best** | `demo/audio_medical_best/` | Medical Top 20（跨域，改善最大） |
+
+> **注意**: 代码还支持 Worst Samples、Medical ASR 和 VoxPopuli EN 数据集，但这些需要额外的音频文件，未包含在 Demo 下载中。
 
 ## 训练
 

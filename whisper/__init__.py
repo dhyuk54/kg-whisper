@@ -128,7 +128,12 @@ def load_model(
     """
 
     if device is None:
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        if torch.cuda.is_available():
+            device = "cuda"
+        elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            device = "mps"
+        else:
+            device = "cpu"
     if download_root is None:
         default = os.path.join(os.path.expanduser("~"), ".cache")
         download_root = os.path.join(os.getenv("XDG_CACHE_HOME", default), "whisper")
@@ -148,7 +153,9 @@ def load_model(
         io.BytesIO(checkpoint_file) if in_memory else open(checkpoint_file, "rb")
     ) as fp:
         kwargs = {"weights_only": True} if torch.__version__ >= "1.13" else {}
-        checkpoint = torch.load(fp, map_location=device, **kwargs)
+        # MPS can't directly deserialize CUDA tensors; load to CPU first
+        load_device = "cpu" if str(device) == "mps" else device
+        checkpoint = torch.load(fp, map_location=load_device, **kwargs)
     del checkpoint_file
 
     dims = ModelDimensions(**checkpoint["dims"])
