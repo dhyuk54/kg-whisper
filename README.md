@@ -1,8 +1,9 @@
 # KG-Whisper: Keyword-Guided Whisper with AdaKWS
-https://discuss.pytorch.kr/t/kg-whisper-kg-asr-feat-hyuk/9547
 Reproduction of two papers from aiOla:
 - **AdaKWS**: [Adaptive Keyword Spotting (arXiv:2309.08561)](https://arxiv.org/abs/2309.08561)
 - **KG-Whisper-PT**: [Keyword-Guided Adaptation of ASR (arXiv:2406.02649)](https://arxiv.org/abs/2406.02649)
+- https://discuss.pytorch.kr/t/kg-whisper-kg-asr-feat-hyuk/9547
+
 
 ## Overview
 
